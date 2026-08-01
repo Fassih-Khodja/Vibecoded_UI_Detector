@@ -8,7 +8,7 @@
 
 
 
-## 🚀Project Overview
+## Project Overview
 
 The core objective of this project is to create an automated "aesthetic scorer" for digital interfaces. It includes:
 1. **Data Collection & Building**: Automated scripts to gather and label interface screenshots.
