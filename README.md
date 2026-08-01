@@ -6,9 +6,9 @@
 
 **Vibecoded Detector** is a Machine Learning project that determines whether a website or app screenshot is "vibecoded" (aesthetically pleasing, modern, and stylized). This repository contains the entire pipeline—from data collection and preprocessing to deep learning model training (using ResNet18) and inference.
 
-> This project was developed as part of a portfolio/CV submission, specifically tailored for End of Studies Projects (PFE).
 
-## 🚀 Project Overview
+
+## 🚀Project Overview
 
 The core objective of this project is to create an automated "aesthetic scorer" for digital interfaces. It includes:
 1. **Data Collection & Building**: Automated scripts to gather and label interface screenshots.
@@ -16,7 +16,7 @@ The core objective of this project is to create an automated "aesthetic scorer" 
 3. **Deep Learning Model**: Fine-tuning a pre-trained **ResNet18** model in PyTorch to classify the "vibe" of an interface.
 4. **Web UI**: A simple web application interface to upload screenshots and receive instant vibe scores.
 
-## 📂 Repository Structure
+##  Repository Structure
 
 The project has been organized into a clean, modular structure:
 
@@ -36,7 +36,7 @@ The project has been organized into a clean, modular structure:
 └── README.md              # Project documentation
 ```
 
-## 🛠️ How It Works
+##  How It Works
 
 ### 1. Data Pipeline (`notebooks/01_data_collection.ipynb` & `02_data_preprocessing.ipynb`)
 - **Collection**: Screenshots are gathered and labeled.
@@ -53,7 +53,7 @@ The project has been organized into a clean, modular structure:
 - The images are passed through the same preprocessing pipeline and fed to the model.
 - An intuitive "vibe meter" displays the probability that the interface is "vibecoded".
 
-## 💻 Installation & Setup
+##  Installation & Setup
 
 To run this project locally, follow these steps:
 
@@ -84,10 +84,5 @@ To run this project locally, follow these steps:
 5. **Run the Notebooks (Optional)**
    Navigate to the `notebooks/` directory and run the notebooks in sequence to recreate the dataset and retrain the model if desired.
 
-## 🧠 Future Work
-- Deploying the inference model as a REST API.
-- Expanding the dataset to include a wider variety of modern UI trends.
-- Implementing an interactive frontend with React or Vue.js.
 
----
-*Created by [Your Name] for PFE application.*
+
