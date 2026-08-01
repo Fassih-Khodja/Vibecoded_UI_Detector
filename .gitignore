@@ -1,0 +1,25 @@
+# Environments
+.venv/
+venv/
+env/
+.env
+
+# Data and large files
+/data/
+*.zip
+*.gz
+*.jsonl
+0/
+1/
+processed_images/
+
+# Python caches
+__pycache__/
+*.pyc
+
+# IDEs
+.vscode/
+.idea/
+
+# Jupyter
+.ipynb_checkpoints/

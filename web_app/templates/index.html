@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vibecode Detector</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #12141a;
+    --surface: #1a1d26;
+    --surface-2: #20242f;
+    --border: #2b2f3c;
+    --text: #e9eaee;
+    --text-muted: #8a8fa3;
+    --accent-clean: #4fd1c5;   /* signal for "not vibecoded" / hand-built */
+    --accent-vibe: #ff8a5b;    /* signal for "vibecoded" */
+    --radius: 10px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body{
+    margin:0;
+    background:
+      radial-gradient(circle at 15% 0%, rgba(79,209,197,0.06), transparent 45%),
+      radial-gradient(circle at 85% 15%, rgba(255,138,91,0.06), transparent 45%),
+      var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap{
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 64px 24px 96px;
+  }
+
+  .eyebrow{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    display:flex;
+    align-items:center;
+    gap: 8px;
+  }
+  .eyebrow::before{
+    content:'';
+    width:6px; height:6px; border-radius:50%;
+    background: linear-gradient(90deg, var(--accent-clean), var(--accent-vibe));
+  }
+
+  h1{
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: clamp(32px, 5vw, 44px);
+    margin: 10px 0 8px;
+    letter-spacing: -0.01em;
+  }
+
+  .subtitle{
+    color: var(--text-muted);
+    font-size: 15px;
+    line-height: 1.6;
+    max-width: 52ch;
+    margin: 0 0 40px;
+  }
+
+  /* ---- dropzone ---- */
+  .dropzone{
+    border: 1.5px dashed var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    padding: 40px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .dropzone:hover, .dropzone.dragover{
+    border-color: var(--accent-clean);
+    background: var(--surface-2);
+  }
+  .dropzone-icon{
+    width: 40px; height: 40px; margin: 0 auto 14px;
+    opacity: 0.7;
+  }
+  .dropzone-title{
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 16px;
+  }
+  .dropzone-hint{
+    color: var(--text-muted);
+    font-size: 13px;
+    margin-top: 6px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  input[type="file"]{ display:none; }
+
+  /* ---- preview grid ---- */
+  .previews{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+    gap: 10px;
+    margin-top: 18px;
+  }
+  .preview-item{
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .preview-item img{ width:100%; height:100%; object-fit: cover; display:block; }
+  .preview-remove{
+    position:absolute; top:4px; right:4px;
+    width:20px; height:20px; border-radius:50%;
+    background: rgba(0,0,0,0.65);
+    color:#fff; border:none; cursor:pointer;
+    font-size: 12px; line-height:1;
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  .actions{
+    display:flex; align-items:center; gap:14px;
+    margin-top: 22px;
+  }
+
+  button.analyze{
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    background: var(--text);
+    color: var(--bg);
+    border: none;
+    border-radius: 8px;
+    padding: 12px 22px;
+    cursor: pointer;
+    transition: opacity .15s ease, transform .1s ease;
+  }
+  button.analyze:hover{ opacity:0.88; }
+  button.analyze:active{ transform: scale(0.98); }
+  button.analyze:disabled{ opacity:0.4; cursor:not-allowed; }
+
+  .file-count{
+    font-family:'JetBrains Mono', monospace;
+    font-size:13px;
+    color: var(--text-muted);
+  }
+
+  /* ---- results ---- */
+  .results{ margin-top: 48px; display:none; }
+  .results.visible{ display:block; animation: fadeIn .35s ease; }
+  @keyframes fadeIn{ from{ opacity:0; transform: translateY(6px);} to{opacity:1; transform:none;} }
+
+  .agg-card{
+    border:1px solid var(--border);
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 28px;
+  }
+  .agg-label{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .agg-value-row{
+    display:flex; align-items:baseline; gap:14px; margin: 6px 0 18px;
+    flex-wrap: wrap;
+  }
+  .agg-value{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size: 46px;
+  }
+  .agg-chip{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 13px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+  }
+  .agg-chip.vibe{ color: var(--accent-vibe); border-color: rgba(255,138,91,0.4); background: rgba(255,138,91,0.08); }
+  .agg-chip.clean{ color: var(--accent-clean); border-color: rgba(79,209,197,0.4); background: rgba(79,209,197,0.08); }
+
+  /* meter: tick-marked gauge, signature element */
+  .meter{
+    position: relative;
+    height: 10px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--accent-clean), var(--accent-vibe));
+    opacity: 0.25;
+  }
+  .meter-fill-mask{
+    position:absolute; inset:0;
+    background: var(--surface);
+    border-radius: 999px;
+    left: var(--pct, 0%);
+    transition: left .5s cubic-bezier(.2,.8,.2,1);
+  }
+  .meter-marker{
+    position:absolute; top:-4px;
+    width:2px; height:18px;
+    background: var(--text);
+    opacity: 0.9;
+    transform: translateX(-1px);
+    left: var(--pos, 0%);
+  }
+  .meter-threshold{
+    position:absolute; top:-4px;
+    width:1px; height:18px;
+    background: var(--text-muted);
+    left: var(--tpos, 50%);
+  }
+  .meter-scale{
+    display:flex; justify-content:space-between;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 6px;
+  }
+
+  .item-list{ margin-top: 28px; display:flex; flex-direction:column; gap:10px; }
+  .item-row{
+    display:grid;
+    grid-template-columns: 44px 1fr auto;
+    align-items:center;
+    gap: 14px;
+    padding: 12px 14px;
+    border:1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+  }
+  .item-thumb{
+    width:44px; height:44px; border-radius:6px; object-fit:cover;
+    border:1px solid var(--border);
+  }
+  .item-mid{ min-width:0; }
+  .item-name{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    color: var(--text);
+    white-space: nowrap; overflow:hidden; text-overflow:ellipsis;
+    margin-bottom: 8px;
+  }
+  .item-meter{ height:6px; }
+  .item-meter .meter-marker{ height:12px; top:-3px; }
+  .item-right{
+    display:flex; align-items:center; gap:10px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 13px;
+  }
+  .item-error{ color: var(--text-muted); font-family:'JetBrains Mono', monospace; font-size:12.5px; }
+
+  .footnote{
+    margin-top: 20px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    color: var(--text-muted);
+  }
+
+  .loading{
+    display:none;
+    align-items:center; gap:10px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 22px;
+  }
+  .loading.visible{ display:flex; }
+  .spinner{
+    width:14px; height:14px;
+    border-radius:50%;
+    border:2px solid var(--border);
+    border-top-color: var(--accent-clean);
+    animation: spin .7s linear infinite;
+  }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="eyebrow">Local image classifier</div>
+  <h1>Vibecode Detector</h1>
+  <p class="subtitle">
+    Drop in one or more screenshots of a website or app. Each image is scored on how
+    likely it is to be "vibecoded" — with the overall verdict averaged across everything you upload.
+  </p>
+
+  <div class="dropzone" id="dropzone">
+    <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="#8a8fa3" stroke-width="1.4">
+      <path d="M4 16.5V18a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1.5M7 9l5-5 5 5M12 4v13"
+        stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div class="dropzone-title">Drop screenshots here, or click to browse</div>
+    <div class="dropzone-hint">PNG · JPG · WEBP</div>
+    <input type="file" id="fileInput" accept=".png,.jpg,.jpeg,.webp" multiple>
+  </div>
+
+  <div class="previews" id="previews"></div>
+
+  <div class="actions">
+    <button class="analyze" id="analyzeBtn" disabled>Analyze</button>
+    <span class="file-count" id="fileCount"></span>
+  </div>
+
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <span>Running images through the model...</span>
+  </div>
+
+  <div class="results" id="results">
+    <div class="agg-card">
+      <div class="agg-label">Average verdict &middot; <span id="aggCount"></span> image(s)</div>
+      <div class="agg-value-row">
+        <span class="agg-value" id="aggValue">--%</span>
+        <span class="agg-chip" id="aggChip">--</span>
+      </div>
+      <div class="meter" id="aggMeter">
+        <div class="meter-fill-mask"></div>
+        <div class="meter-marker"></div>
+        <div class="meter-threshold"></div>
+      </div>
+      <div class="meter-scale"><span>0%</span><span>50%</span><span>100%</span></div>
+    </div>
+
+    <div class="item-list" id="itemList"></div>
+
+    <div class="footnote" id="footnote"></div>
+  </div>
+
+</div>
+
+<script>
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const previews = document.getElementById('previews');
+const analyzeBtn = document.getElementById('analyzeBtn');
+const fileCount = document.getElementById('fileCount');
+const loading = document.getElementById('loading');
+const resultsEl = document.getElementById('results');
+const THRESHOLD = {{ threshold }};
+
+let selectedFiles = [];
+
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+dropzone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropzone.classList.remove('dragover');
+  addFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener('change', (e) => addFiles(e.target.files));
+
+function addFiles(fileList) {
+  for (const f of fileList) {
+    if (f.type.startsWith('image/')) selectedFiles.push(f);
+  }
+  renderPreviews();
+}
+
+function removeFile(index) {
+  selectedFiles.splice(index, 1);
+  renderPreviews();
+}
+
+function renderPreviews() {
+  previews.innerHTML = '';
+  selectedFiles.forEach((file, i) => {
+    const url = URL.createObjectURL(file);
+    const item = document.createElement('div');
+    item.className = 'preview-item';
+    item.innerHTML = `<img src="${url}"><button class="preview-remove" data-i="${i}">&times;</button>`;
+    item.querySelector('.preview-remove').addEventListener('click', (e) => {
+      e.stopPropagation();
+      removeFile(i);
+    });
+    previews.appendChild(item);
+  });
+  analyzeBtn.disabled = selectedFiles.length === 0;
+  fileCount.textContent = selectedFiles.length > 0
+    ? `${selectedFiles.length} image${selectedFiles.length > 1 ? 's' : ''} selected`
+    : '';
+  resultsEl.classList.remove('visible');
+}
+
+function setMeter(meterEl, prob) {
+  const pct = Math.round(prob * 100);
+  meterEl.style.setProperty('--pct', `${pct}%`);
+  meterEl.style.setProperty('--pos', `${pct}%`);
+  meterEl.style.setProperty('--tpos', `${Math.round(THRESHOLD * 100)}%`);
+}
+
+function chipFor(label) {
+  return label && label.toLowerCase().includes('not') ? 'clean' : 'vibe';
+}
+
+analyzeBtn.addEventListener('click', async () => {
+  if (selectedFiles.length === 0) return;
+
+  loading.classList.add('visible');
+  resultsEl.classList.remove('visible');
+  analyzeBtn.disabled = true;
+
+  const formData = new FormData();
+  selectedFiles.forEach(f => formData.append('images', f));
+
+  try {
+    const res = await fetch('/predict', { method: 'POST', body: formData });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Request failed');
+    renderResults(data);
+  } catch (err) {
+    alert('Something went wrong: ' + err.message);
+  } finally {
+    loading.classList.remove('visible');
+    analyzeBtn.disabled = false;
+  }
+});
+
+function renderResults(data) {
+  document.getElementById('aggCount').textContent = data.results.length;
+
+  if (data.average_probability !== null) {
+    const pct = Math.round(data.average_probability * 100);
+    document.getElementById('aggValue').textContent = `${pct}%`;
+    const chip = document.getElementById('aggChip');
+    chip.textContent = data.average_label;
+    chip.className = 'agg-chip ' + chipFor(data.average_label);
+    setMeter(document.getElementById('aggMeter'), data.average_probability);
+  } else {
+    document.getElementById('aggValue').textContent = '--';
+    document.getElementById('aggChip').textContent = 'no valid images';
+  }
+
+  const list = document.getElementById('itemList');
+  list.innerHTML = '';
+
+  data.results.forEach((r, i) => {
+    const thumbUrl = selectedFiles[i] ? URL.createObjectURL(selectedFiles[i]) : '';
+    const row = document.createElement('div');
+    row.className = 'item-row';
+
+    if (r.error) {
+      row.innerHTML = `
+        <img class="item-thumb" src="${thumbUrl}">
+        <div class="item-mid">
+          <div class="item-name">${r.filename}</div>
+          <div class="item-error">${r.error}</div>
+        </div>
+        <div></div>`;
+    } else {
+      const pct = Math.round(r.probability * 100);
+      row.innerHTML = `
+        <img class="item-thumb" src="${thumbUrl}">
+        <div class="item-mid">
+          <div class="item-name">${r.filename}</div>
+          <div class="meter item-meter" id="meter-${i}">
+            <div class="meter-fill-mask"></div>
+            <div class="meter-marker"></div>
+          </div>
+        </div>
+        <div class="item-right">
+          <span>${pct}%</span>
+          <span class="agg-chip ${chipFor(r.label)}">${r.label}</span>
+        </div>`;
+    }
+    list.appendChild(row);
+    if (!r.error) setMeter(document.getElementById(`meter-${i}`), r.probability);
+  });
+
+  document.getElementById('footnote').textContent =
+    `Classification threshold: ${Math.round(data.threshold * 100)}% · classes: ${data.class_names.join(' / ')}`;
+
+  resultsEl.classList.add('visible');
+}
+</script>
+</body>
+</html>
